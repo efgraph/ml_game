@@ -1,0 +1,140 @@
+output_file: ${base.qa_file}
+
+model_name: gpt-4.1
+subtopics:
+  - mean
+  - median
+  - mode
+  - variance
+  - standard deviation
+  - normal distribution
+  - z-score
+  - probability
+  - sampling
+  - confidence interval
+  - t-test
+  - chi-square test
+  - hypothesis testing
+  - correlation
+  - regression
+  - linear regression
+  - logistic regression
+  - outliers
+  - skewness
+  - central tendency
+  - ANOVA
+  - box plot
+  - data visualization
+  - descriptive statistics
+  - inference
+  - statistical significance
+  - random sampling
+  - data distribution
+  - histograms
+  - percentiles
+  - quartiles
+  - scatter plots
+  - Bayesian inference
+  - p-values
+  - Type I error
+  - Type II error
+  - confidence levels
+  - sample size
+  - margin of error
+  - population vs sample
+  - central limit theorem
+  - law of large numbers
+  - likelihood
+  - maximum likelihood estimation
+  - least squares method
+  - residuals
+  - multicollinearity
+  - sampling bias
+  - response bias
+  - non-response bias
+  - students t-distribution
+  - degrees of freedom
+  - z-table
+  - t-table
+  - left-tailed test
+  - right-tailed test
+  - two-tailed test
+  - distribution shape
+  - frequency distribution
+  - relative frequency
+  - cumulative frequency
+  - bar charts
+  - pie charts
+  - line graphs
+  - dot plots
+  - stem-and-leaf plot
+  - time series plot
+  - population parameters
+  - sample statistics
+  - data types
+  - ordinal data
+  - nominal data
+  - interval data
+  - probability axioms
+  - sample space
+  - events
+  - classical probability
+  - experimental probability
+  - complementary events
+  - mutually exclusive events
+  - independent events
+  - dependent events
+  - conditional probability
+  - Bayes' theorem
+  - random variables
+  - discrete random variables
+  - continuous random variables
+  - probability mass function (PMF)
+  - probability density function (PDF)
+  - cumulative distribution function (CDF)
+  - expected value
+  - Bernoulli distribution
+  - Binomial distribution
+  - Poisson distribution
+  - Geometric distribution
+  - Uniform distribution
+  - Exponential distribution
+  - Beta distribution
+  - Gamma distribution
+  - joint probability
+  - marginal probability
+  - conditional distributions
+  - covariance
+  - correlation in probability
+  - independence of random variables
+  - counting principles
+  - permutations
+  - combinations
+  - hypergeometric distribution
+  - random experiments
+  - overfitting
+  - underfitting
+  - bias-variance tradeoff
+  - regularization
+  - cross-validation
+  - train-test split
+  - feature selection
+  - bagging
+  - boosting
+  - ensemble learning
+  - data leakage
+  - confusion matrix
+  - precision and recall
+  - F1 score
+  - ROC curve
+  - AUC
+  - classification threshold
+  - covariance matrix
+  - bootstrap
+  - principal component analysis
+
+pairs_per_topic: 10
+answer_max_words: 15
+temperature: 0.7
+rate_delay_seconds: 4.0
+max_retries: 3

@@ -1,0 +1,5 @@
+openai_api_key: sk-proj
+
+
+qa_file: data/qa_data.jsonl
+classifier_file: data/classifier_data.jsonl

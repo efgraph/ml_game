@@ -1,0 +1,30 @@
+model_name: google/t5-small-lm-adapt
+lr: 1e-4
+weight_decay: 0.01
+epochs: 14
+
+batch_size: 32
+max_in: 64
+max_out: 64
+num_workers: 4
+val_split: 0.1
+seed: 42
+
+accelerator: gpu
+devices: 1
+precision: 32
+grad_clip: 1.0
+accum_grad: 1
+
+temperature: 0.3
+top_p: 0.9
+max_tokens: 128
+
+model_dir: models
+
+logger: mlflow
+experiment_name: qa_generator
+run_name: run_001
+tracking_uri: sqlite:///mlruns.db
+log_model: True
+

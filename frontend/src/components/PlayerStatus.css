@@ -1,0 +1,134 @@
+.player-status {
+  width: 100%;
+  padding: 12px;
+  margin: 0;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-status.current-player {
+  border-left: 3px solid #2980b9;
+}
+
+.player-status.opponent-player {
+  border-left: 3px solid #e74c3c;
+  opacity: 0.9;
+}
+
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.player-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.player-score {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.score-value {
+  font-weight: 700;
+  color: #2980b9;
+}
+
+.player-progress, .player-score-progress {
+  margin: 10px 0;
+}
+
+.progress-bar {
+  height: 6px;
+  width: 100%;
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #2ecc71;
+  transition: width 0.3s ease;
+}
+
+.score-progress-fill {
+  height: 100%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+}
+
+.current-player .score-progress-fill {
+  background-color: #3498db;
+}
+
+.opponent-player .score-progress-fill {
+  background-color: #e74c3c;
+}
+
+.progress-text {
+  margin-top: 3px;
+  font-size: 0.65rem;
+  color: #777;
+  text-align: right;
+}
+
+.player-last-answer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  flex: 1;
+}
+
+.last-answer-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #777;
+  margin-bottom: 3px;
+}
+
+.last-answer-value {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  background-color: #f9f9f9;
+  border-radius: 3px;
+  word-break: break-word;
+}
+
+.answer-correct {
+  background-color: rgba(46, 204, 113, 0.2);
+  border-left: 2px solid #2ecc71;
+  color: #27ae60;
+}
+
+.answer-partial {
+  background-color: rgba(241, 196, 15, 0.2);
+  border-left: 2px solid #f1c40f;
+  color: #f39c12;
+}
+
+.answer-incorrect {
+  background-color: rgba(231, 76, 60, 0.2);
+  border-left: 3px solid #e74c3c;
+  color: #c0392b;
+}
+
+.you-label {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #2980b9;
+  background-color: rgba(41, 128, 185, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+} 
