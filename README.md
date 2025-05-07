@@ -13,12 +13,12 @@
 
 ### Анализ данных (EDA) (`backend/eda`)
 
--   **Подробности:** [EDA](./backend/eda/EDA.md).
+-   **Перейти:** [EDA](./backend/eda/EDA.md).
 
 ### Фронтенд (`frontend/`)
 
 -   **Технологии:** React, TypeScript, Vite, MobX, CSS.
--   **Подробности:** [README фронтенда](./frontend/README.md) по настройке и запуску.
+-   **Перейти:** [README фронтенда](./frontend/README.md) по настройке и запуску.
 
 ## Игровой процесс
 
