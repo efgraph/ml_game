@@ -6,13 +6,21 @@ interface FlipCardProps {
   question: string;
   answer: string;
   topic?: string;
+  context?: string;
   onAnswered?: () => void;
 }
+
+const getFirstNSentences = (text: string | undefined, n: number): string => {
+  if (!text) return "";
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  return sentences.slice(0, n).join(' ').trim();
+};
 
 const FlipCard: React.FC<FlipCardProps> = ({ 
   question, 
   answer, 
   topic, 
+  context,
   onAnswered 
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -39,6 +47,8 @@ const FlipCard: React.FC<FlipCardProps> = ({
     }
   };
 
+  const displayContext = getFirstNSentences(context, 2);
+
   return (
     <div 
       className={`flip-card ${isFlipped ? 'flipped' : ''}`} 
@@ -49,12 +59,12 @@ const FlipCard: React.FC<FlipCardProps> = ({
           <div className="card-content">
             {topic && <div className="card-topic">Topic: {topic}</div>}
             <p className="question-text">{question}</p>
-            <span className="flip-hint">Click to reveal answer</span>
+            <span className="flip-hint">Click for hint</span>
           </div>
         </div>
         <div className="flip-card-back">
           <div className="card-content">
-            <p className="answer-text">{answer || "No answer provided yet."}</p>
+            <p className="answer-text hint-text">{displayContext || "No hint available."}</p>
             <span className="flip-hint">Click to go back</span>
           </div>
         </div>

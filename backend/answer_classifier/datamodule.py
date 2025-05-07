@@ -19,6 +19,7 @@ class GradedAnswerDM(pl.LightningDataModule):
         self,
         file_path: str,
         model_name: str,
+        use_ref_answers: bool,
         batch_size: int = 16,
         max_len: int = 128,
         val_split: float = 0.1,
@@ -27,6 +28,7 @@ class GradedAnswerDM(pl.LightningDataModule):
     ):
         super().__init__()
         self.file_path = Path(file_path)
+        self.use_ref_answers = use_ref_answers
         self.batch_size = batch_size
         self.max_len = max_len
         self.val_split = val_split
@@ -43,7 +45,7 @@ class GradedAnswerDM(pl.LightningDataModule):
 
         exploded = [
             {
-                "premise": f"{row['question']} [SEP] {ref}",
+                "context": f"{row['question']} [SEP] {ref}" if self.use_ref_answers else row['question'],
                 "student": row["student_answer"],
                 "label": row["score"],
             }
@@ -57,7 +59,7 @@ class GradedAnswerDM(pl.LightningDataModule):
 
     def _encode(self, item: Dict[str, str]) -> Dict[str, torch.Tensor]:
         tokens = self.tokenizer(
-            item["premise"],
+            item["context"],
             item["student"],
             truncation=True,
             padding="max_length",

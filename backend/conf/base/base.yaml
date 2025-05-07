@@ -3,3 +3,6 @@ openai_api_key: sk-proj
 
 qa_file: data/qa_data.jsonl
 classifier_file: data/classifier_data.jsonl
+ctx_file: data/context_data.jsonl
+
+tracking_uri: "sqlite:///mlruns/mlruns.db"

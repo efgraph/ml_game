@@ -7,8 +7,10 @@ readme = "README.md"
 packages = [
   { include = "answer_classifier" },
   { include = "question_generator" },
+  { include = "common" },
   { include = "dataparser" },
   { include = "api" },
+  { include = "eda" },
   { include = "commands.py" }
 ]
 
@@ -30,6 +32,13 @@ fastapi = ">=0.115.12"
 torch = "2.2.0"
 uvicorn = { extras = ["standard"], version = "*" }
 numpy = "^1.24.0"
+nltk = "=3.9.1"
+bert-score = "=0.3.13"
+seaborn = "0.13.2"
+pandas = "=2.2.3"
+matplotlib = "=3.10.1"
+opentelemetry-api = "1.24.0"
+opentelemetry-sdk = "1.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"

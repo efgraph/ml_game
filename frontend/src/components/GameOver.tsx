@@ -6,22 +6,23 @@ import './GameOver.css';
 const GameOver: React.FC = observer(() => {
   const store = useStore();
 
-  const playerCorrect = store.currentPlayer.score;
-  const playerTotal = store.totalQuestions;
-  const playerAccuracy = playerTotal > 0 ? Math.round((playerCorrect / playerTotal) * 100) : 0;
-  const playerAvgTime = store.settings.questionTimeLimit / 2;
+  const playerFinalScore = store.currentPlayer.score;
+  const opponentFinalScore = store.opponentPlayer.score;
+  const maxPossibleScore = store.maxGameScore;
 
-  const opponentCorrect = store.opponentPlayer.score;
-  const opponentAccuracy = playerTotal > 0 ? Math.round((opponentCorrect / playerTotal) * 100) : 0;
+  const playerAccuracy = maxPossibleScore > 0 ? Math.round((playerFinalScore / maxPossibleScore) * 100) : 0;
+  const opponentAccuracy = maxPossibleScore > 0 ? Math.round((opponentFinalScore / maxPossibleScore) * 100) : 0;
+  
+  const playerAvgTime = store.settings.questionTimeLimit / 2;
   const opponentAvgTime = store.settings.questionTimeLimit / 2;
 
   let resultMessage = '';
   let resultIcon = '';
 
-  if (playerCorrect > opponentCorrect) {
+  if (playerFinalScore > opponentFinalScore) {
     resultMessage = 'Congratulations! You won!';
     resultIcon = '🏆';
-  } else if (playerCorrect < opponentCorrect) {
+  } else if (playerFinalScore < opponentFinalScore) {
     resultMessage = 'Better luck next time!';
     resultIcon = '😢';
   } else {
@@ -46,7 +47,7 @@ const GameOver: React.FC = observer(() => {
         <div className="final-scores">
           <div className="player-score-card">
             <h3>Your Score</h3>
-            <div className="score">{playerCorrect}/{playerTotal}</div>
+            <div className="score">{playerFinalScore} / {maxPossibleScore}</div>
             <div className="stats">
               <div className="stat">
                 <span className="stat-label">Accuracy:</span>
@@ -61,7 +62,7 @@ const GameOver: React.FC = observer(() => {
           
           <div className="player-score-card opponent">
             <h3>Opponent's Score</h3>
-            <div className="score">{opponentCorrect}/{playerTotal}</div>
+            <div className="score">{opponentFinalScore} / {maxPossibleScore}</div>
             <div className="stats">
               <div className="stat">
                 <span className="stat-label">Accuracy:</span>

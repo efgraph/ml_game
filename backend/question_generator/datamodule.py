@@ -9,6 +9,8 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
+from common.context_provider import load_qa_contexts
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
@@ -21,6 +23,8 @@ class QuestionDataModule(pl.LightningDataModule):
         self,
         file_path: str,
         model_name: str,
+        context_file_path: str,
+        use_context: bool = False,
         batch_size: int = 8,
         max_in: int = 64,
         max_out: int = 64,
@@ -30,6 +34,8 @@ class QuestionDataModule(pl.LightningDataModule):
     ):
         super().__init__()
         self.file_path = Path(file_path)
+        self.use_context = use_context
+        self.context_file_path = Path(context_file_path)
         self.batch_size = batch_size
         self.max_in, self.max_out = max_in, max_out
         self.num_workers = num_workers
@@ -38,16 +44,38 @@ class QuestionDataModule(pl.LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, legacy=True)
         self.train_rows: List[Dict] = []
         self.val_rows: List[Dict] = []
+        self.contexts: Dict[str, str] = {}
 
     def setup(self, stage: Optional[str] = None):
         rows = [json.loads(l) for l in self.file_path.open()]
-        random.Random(self.seed).shuffle(rows)
-        cut = int(len(rows) * (1 - self.val_split))
-        self.train_rows, self.val_rows = rows[:cut], rows[cut:]
+
+        if self.use_context:
+            self.contexts = load_qa_contexts(self.context_file_path)
+
+        processed_rows = []
+        for row in rows:
+            if self.use_context and self.contexts and 'input' in row:
+                match = re.search(r'^(.*?):(.*)$', row['input'])
+                topic = None
+                original_input = row['input']
+
+                if match:
+                    topic = match.group(2).strip()
+
+                context = self.contexts.get(topic)
+                row['input'] = f"{original_input} [SEP] {context}" if self.use_context else original_input,
+
+            processed_rows.append(row)
+
+        random.Random(self.seed).shuffle(processed_rows)
+        cut = int(len(processed_rows) * (1 - self.val_split))
+        self.train_rows, self.val_rows = processed_rows[:cut], processed_rows[cut:]
 
     def _encode(self, row: Dict) -> Dict[str, torch.Tensor]:
+        input_text = row.get("input", "")
+
         enc = self.tokenizer(
-            row["input"],
+            input_text,
             max_length=self.max_in,
             truncation=True,
             padding="max_length",

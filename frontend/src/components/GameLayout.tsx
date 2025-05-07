@@ -91,7 +91,7 @@ const GameLayout: React.FC<GameLayoutProps> = observer(({
         {isLoading ? (
           <div className="loading-overlay">
             <div className="loading-spinner"></div>
-            <p>Loading game...</p>
+            <p>Loading ...</p>
           </div>
         ) : null}
         {children}

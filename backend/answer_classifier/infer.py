@@ -33,14 +33,11 @@ def _load_dir(path: Path):
 def infer_classifier(
     question: str,
     student_answer: str,
-    ref_answers: Sequence[str],
+    ref_answers: Sequence[str] = None,
     checkpoint: Optional[str] = None,
     model_root: str = "./models",
     reduction: str = "mean",
 ) -> Dict[str, Any]:
-    if not ref_answers:
-        raise ValueError("ref_answers must contain at least one reference answer")
-
     path = Path(checkpoint) if checkpoint else _latest_artifact(model_root)
     model, tokenizer = (
         _load_dir(path) if path.is_dir()
@@ -51,10 +48,13 @@ def infer_classifier(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device).eval()
 
+    ref_answers = ref_answers or [None]
+
     logits_stack = []
     for ref in ref_answers:
+        prompt = f"{question} [SEP] {ref}" if ref else question
         toks = tokenizer(
-            f"{question} [SEP] {ref}",
+            prompt,
             student_answer,
             truncation=True,
             padding="max_length",

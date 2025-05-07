@@ -1,4 +1,5 @@
 output_file: ${base.qa_file}
+context_file: ${base.ctx_file}
 
 model_name: gpt-4.1
 subtopics:

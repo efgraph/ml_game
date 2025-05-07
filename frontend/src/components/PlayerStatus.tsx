@@ -8,6 +8,7 @@ interface PlayerStatusProps {
   score: number;
   questionsAnswered: number;
   totalQuestions: number;
+  maxGameScore: number;
   lastAnswer?: string;
   lastEvaluation: any;
   isCurrentPlayer: boolean;
@@ -18,6 +19,7 @@ const PlayerStatus: React.FC<PlayerStatusProps> = observer(({
   score,
   questionsAnswered,
   totalQuestions,
+  maxGameScore,
   lastAnswer,
   lastEvaluation,
   isCurrentPlayer
@@ -25,25 +27,26 @@ const PlayerStatus: React.FC<PlayerStatusProps> = observer(({
   const getEvaluationClass = () => {
     if (!lastEvaluation) return '';
     
-    switch (lastEvaluation.evaluation) {
+    const evaluationValue = typeof lastEvaluation.evaluation === 'string'
+                            ? lastEvaluation.evaluation.toUpperCase() 
+                            : lastEvaluation.evaluation;
+
+    switch (evaluationValue) {
       case AnswerEvaluation.CORRECT:
         return 'answer-correct';
       case AnswerEvaluation.PARTIALLY_CORRECT:
         return 'answer-partial';
-      case AnswerEvaluation.INCORRECT:
+      case AnswerEvaluation.INCORRECT: 
         return 'answer-incorrect';
       default:
         return '';
     }
   };
 
-  const maxPossibleScore = totalQuestions;
+  const currentMaxScore = maxGameScore > 0 ? maxGameScore : 1;
+  const scoreProgressPercentage = Math.min((score / currentMaxScore) * 100, 100);
   
-  const scoreProgressPercentage = Math.min((score / maxPossibleScore) * 100, 100);
-  
-  const progressPercent = isCurrentPlayer
-    ? (questionsAnswered / totalQuestions) * 100 
-    : (questionsAnswered / totalQuestions) * 100;
+  const progressPercent = totalQuestions > 0 ? (questionsAnswered / totalQuestions) * 100 : 0;
 
   return (
     <div className={`player-status ${isCurrentPlayer ? 'current-player' : 'opponent-player'}`}>
@@ -76,15 +79,15 @@ const PlayerStatus: React.FC<PlayerStatusProps> = observer(({
           ></div>
         </div>
         <div className="progress-text">
-          Score progress: {score} / {maxPossibleScore}
+          Score progress: {score} / {maxGameScore}
         </div>
       </div>
       
-      {(lastAnswer || !isCurrentPlayer) && (
+      {(lastAnswer || (!isCurrentPlayer && questionsAnswered > 0)) && (
         <div className="player-last-answer">
           <div className="last-answer-label">Last Answer:</div>
           <div className={`last-answer-value ${getEvaluationClass()}`}>
-            {lastAnswer || (questionsAnswered > 0 ? 'Some answer' : 'Waiting...')}
+            {lastAnswer || (questionsAnswered > 0 && !isCurrentPlayer ? 'Opponent has answered' : 'Waiting...')}
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
-model_name: google/t5-small-lm-adapt
+model_name: facebook/bart-base # google/flan-t5-small
 lr: 1e-4
 weight_decay: 0.01
-epochs: 14
+epochs: 7
 
 batch_size: 32
 max_in: 64
@@ -9,6 +9,8 @@ max_out: 64
 num_workers: 4
 val_split: 0.1
 seed: 42
+
+use_context: true
 
 accelerator: gpu
 devices: 1
@@ -24,7 +26,6 @@ model_dir: models
 
 logger: mlflow
 experiment_name: qa_generator
-run_name: run_001
-tracking_uri: sqlite:///mlruns.db
-log_model: True
+run_name: qa_bart_context
+log_model: true
 

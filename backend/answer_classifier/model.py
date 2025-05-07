@@ -25,10 +25,14 @@ class AnswerGrader(pl.LightningModule):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         self.loss_fn = torch.nn.CrossEntropyLoss()
-        self.metric_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
-        self.metric_f1 = torchmetrics.F1Score(
-            task="multiclass", num_classes=num_classes, average="macro"
-        )
+
+        self.train_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=num_classes)
+        self.train_f1 = torchmetrics.F1Score(
+            task="multiclass", num_classes=num_classes, average="macro")
+
+        self.val_acc = self.train_acc.clone()
+        self.val_f1 = self.train_f1.clone()
 
     def forward(self, batch):
         return self.model(**batch).logits
@@ -36,20 +40,50 @@ class AnswerGrader(pl.LightningModule):
     def _shared_step(self, batch, stage: str):
         logits = self(batch)
         loss = self.loss_fn(logits, batch["labels"])
+        preds = logits.argmax(dim=-1)
 
-        self.metric_acc(logits, batch["labels"])
-        self.metric_f1(logits, batch["labels"])
+        if stage == "train":
+            acc = self.train_acc(preds, batch["labels"])
+            f1 = self.train_f1(preds, batch["labels"])
 
-        self.log(f"{stage}_loss", loss, prog_bar=True)
-        self.log(f"{stage}_acc", self.metric_acc, prog_bar=True)
-        self.log(f"{stage}_f1", self.metric_f1, prog_bar=True)
+            self.log(
+                "train_loss", loss,
+                on_step=False, on_epoch=True, sync_dist=True
+            )
+            self.log(
+                "train_acc", acc,
+                on_step=False, on_epoch=True, sync_dist=True
+            )
+            self.log(
+                "train_f1", f1,
+                on_step=False, on_epoch=True, sync_dist=True
+            )
+        else:
+            self.val_acc.update(preds, batch["labels"])
+            self.val_f1.update(preds, batch["labels"])
+
+            self.log(
+                "val_loss", loss,
+                on_step=False, on_epoch=True, prog_bar=True, sync_dist=True
+            )
+
         return loss
 
     def training_step(self, batch, _):
-        return self._shared_step(batch, "train")
+        return self._shared_step(batch, stage="train")
 
     def validation_step(self, batch, _):
-        self._shared_step(batch, "val")
+        self._shared_step(batch, stage="val")
+
+    def on_validation_epoch_end(self):
+        val_acc = self.val_acc.compute()
+        val_f1 = self.val_f1.compute()
+
+        self.log("acc", val_acc, prog_bar=True, sync_dist=True)
+        self.log("f1", val_f1, prog_bar=True, sync_dist=True)
+
+        self.val_acc.reset()
+        self.val_f1.reset()
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)

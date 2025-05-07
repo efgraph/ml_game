@@ -35,6 +35,7 @@ export interface ApiQuestion {
   question: string;
   answer: string;
   topic?: string;
+  context?: string;
 }
 
 export interface GenerateQuestionResponse {
@@ -55,14 +56,14 @@ export interface OpponentData {
   lastEvaluation?: OpponentEvaluation;
 }
 
+export interface GetOpponentDataParams {
+  questionId: number;
+  topic: string;
+}
+
 export interface ApiClient {
   getRandomTopic: () => string;
-  getOpponentData: (params: { questionId: number }) => Promise<GetOpponentDataResponse>;
-  submitAnswer: (params: { 
-    playerId: string; 
-    questionId: number; 
-    answer: string;
-    questionText?: string; 
-  }) => Promise<SubmitAnswerResponse>;
+  getOpponentData: (params: GetOpponentDataParams) => Promise<GetOpponentDataResponse>;
+  submitAnswer: (params: SubmitAnswerRequest) => Promise<SubmitAnswerResponse>;
   generateQuestion: (topic?: string) => Promise<GenerateQuestionResponse>;
 } 

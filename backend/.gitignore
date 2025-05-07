@@ -95,4 +95,5 @@ data/
 /multirun/
 
 .DS_Store
-Thumbs.db 
+Thumbs.db
+mlruns.db

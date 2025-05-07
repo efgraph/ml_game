@@ -2,12 +2,14 @@ import { createContext, useContext } from 'react';
 import { makeAutoObservable, runInAction, action as mobxAction } from 'mobx';
 import apiClient from '../api/apiClient';
 import { EvaluationResult, AnswerEvaluation, EvaluationOptions } from '../utils/answerEvaluator';
+import { SubmitAnswerRequest } from '../api/types';
 
 interface Question {
   id: number;
   question: string;
   answer: string;
   topic?: string;
+  context?: string;
 }
 
 interface Player {
@@ -62,6 +64,8 @@ class GameStore {
   private opponentPollingInterval: number | null = null;
 
   private _pendingPlayerName: string | null = null;
+
+  readonly maxScorePerQuestion = 3;
 
   constructor() {
     makeAutoObservable(this);
@@ -323,10 +327,12 @@ class GameStore {
     
     try {
       const currentQuestionId = this.currentQuestionIndex + 1;
-      console.log(`Fetching opponent data for question ${currentQuestionId}`);
+      const currentTopic = this.currentQuestion?.topic || apiClient.getRandomTopic();
+      console.log(`Fetching opponent data for question ${currentQuestionId}, topic: ${currentTopic}`);
       
       const response = await apiClient.getOpponentData({
-        questionId: currentQuestionId
+        questionId: currentQuestionId,
+        topic: currentTopic
       });
       
       if (response.success && this.gameState === GameState.PLAYING) {
@@ -344,7 +350,7 @@ class GameStore {
           
           if (response.opponent.lastEvaluation) {
             opponent.lastEvaluation = {
-              evaluation: response.opponent.lastEvaluation.evaluation,
+              evaluation: response.opponent.lastEvaluation.evaluation as AnswerEvaluation,
               score: response.opponent.lastEvaluation.score,
               feedback: response.opponent.lastEvaluation.feedback || ''
             };
@@ -426,12 +432,13 @@ class GameStore {
     try {
       console.log(`Submitting answer for question: "${this.currentQuestion.question}"`);
       
-      const response = await apiClient.submitAnswer({
+      const requestPayload: SubmitAnswerRequest = {
         playerId: this.currentPlayer.id,
         questionId: this.currentQuestionIndex + 1,
-        answer: userAnswer,
-        questionText: this.currentQuestion.question
-      });
+        answer: userAnswer
+      };
+      
+      const response = await apiClient.submitAnswer(requestPayload);
       
       if (response.success) {
         runInAction(() => {
@@ -520,6 +527,16 @@ class GameStore {
     } else if (this.currentPlayerId === 'player1' && this.players.size === 0) {
       this._pendingPlayerName = name.trim();
     }
+  }
+
+  get maxGameScore(): number {
+    return this.questions.length * this.maxScorePerQuestion;
+  }
+
+  playerScoreProgress(playerId: string): number {
+    const player = this.players.get(playerId);
+    if (!player || this.maxGameScore === 0) return 0;
+    return (player.score / this.maxGameScore) * 100;
   }
 }
 

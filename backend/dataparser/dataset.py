@@ -52,15 +52,6 @@ def generate_qa_pairs_for_topic(topic: str, client: OpenAI, cfg: DictConfig, log
     return []
 
 
-def extract_question_answer(block: str) -> Tuple[str, List[str]]:
-    mq = re.search(r"Question:\s*(.+)", block, re.I)
-    a1 = re.search(r"Answer1:\s*(.+)", block, re.I)
-    a2 = re.search(r"Answer2:\s*(.+)", block, re.I)
-    if not (mq and a1 and a2):
-        raise ValueError("parse error")
-    return mq.group(1).strip(), [a1.group(1).strip(), a2.group(1).strip()]
-
-
 _SYSTEM_PROMPT_GRADING = """You are an expert statistics instructor.
 Produce short student answers at 4 rubric levels:
 
@@ -116,3 +107,43 @@ def generate_graded_answers(
         except (RateLimitError, APIError):
             time.sleep((2 ** attempt) * cfg.rate_delay_seconds)
     return []
+
+
+def generate_context_for_topic(topic: str, client: OpenAI, cfg: DictConfig, log_prompts: bool = False) -> str:
+    system_prompt = "You are a helpful educational assistant. Return valid JSON only."
+
+    user_prompt = (
+        f"Write a clear and informative paragraph explaining the concept of \"{topic}\" in statistics.\n"
+        f"Include its definition, how it is calculated, when it is used, and its limitations.\n"
+        f"Do not use any mathematical symbols, formulas, or equations. Use simple language.\n"
+        f"Do not use word statistics in the answer.\n"
+        f"Return your answer as a JSON object in the format:\n"
+        f'{{"topic": "{topic}", "context": "your explanation here"}}'
+    )
+
+    for attempt in range(cfg.max_retries):
+        try:
+            rsp = client.chat.completions.create(
+                model=cfg.model_name,
+                temperature=cfg.temperature,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"},
+            )
+            content = rsp.choices[0].message.content.strip()
+
+            if log_prompts:
+                print("----- context prompt -----")
+                print(user_prompt)
+                print("----- response -----")
+                print(content)
+                print("--------------------------")
+
+            obj = json.loads(content)
+            return obj.get("context", "")
+        except (RateLimitError, APIError, json.JSONDecodeError):
+            time.sleep((2 ** attempt) * cfg.rate_delay_seconds)
+
+    return ""

@@ -5,7 +5,7 @@ import PlayerStatus from './PlayerStatus';
 import gameStore from '../stores/GameStore';
 
 const MultplayerPanel: React.FC = observer(() => {
-  const { currentPlayer, opponentPlayer, totalQuestions } = gameStore;
+  const { currentPlayer, opponentPlayer, totalQuestions, maxGameScore } = gameStore;
   
   return (
     <div className="multiplayer-panel">
@@ -15,6 +15,7 @@ const MultplayerPanel: React.FC = observer(() => {
           score={currentPlayer.score}
           questionsAnswered={currentPlayer.questionsAnswered}
           totalQuestions={totalQuestions}
+          maxGameScore={maxGameScore}
           lastAnswer={currentPlayer.lastAnswer}
           lastEvaluation={currentPlayer.lastEvaluation}
           isCurrentPlayer={true}
@@ -25,6 +26,7 @@ const MultplayerPanel: React.FC = observer(() => {
           score={opponentPlayer.score}
           questionsAnswered={opponentPlayer.questionsAnswered}
           totalQuestions={totalQuestions}
+          maxGameScore={maxGameScore}
           lastAnswer={opponentPlayer.lastAnswer}
           lastEvaluation={opponentPlayer.lastEvaluation}
           isCurrentPlayer={false}

@@ -34,6 +34,7 @@ const App = observer(() => {
                   question={store.currentQuestion.question}
                   answer={store.currentQuestion.answer}
                   topic={store.currentQuestion.topic}
+                  context={store.currentQuestion.context}
                   onAnswered={() => {}}
                 />
                 
