@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pytorch_lightning as pl
+import json
 import torch
+import pytorch_lightning as pl
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torchmetrics
 
@@ -23,16 +24,16 @@ class AnswerGrader(pl.LightningModule):
             ignore_mismatched_sizes=True,
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-        self.train_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes)
-        self.train_f1 = torchmetrics.F1Score(
-            task="multiclass", num_classes=num_classes, average="macro")
+        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
+        self.train_f1 = torchmetrics.F1Score(task="multiclass", num_classes=num_classes, average="macro")
 
         self.val_acc = self.train_acc.clone()
         self.val_f1 = self.train_f1.clone()
+
+        self.val_preds = []
+        self.val_labels = []
 
     def forward(self, batch):
         return self.model(**batch).logits
@@ -45,27 +46,15 @@ class AnswerGrader(pl.LightningModule):
         if stage == "train":
             acc = self.train_acc(preds, batch["labels"])
             f1 = self.train_f1(preds, batch["labels"])
-
-            self.log(
-                "train_loss", loss,
-                on_step=False, on_epoch=True, sync_dist=True
-            )
-            self.log(
-                "train_acc", acc,
-                on_step=False, on_epoch=True, sync_dist=True
-            )
-            self.log(
-                "train_f1", f1,
-                on_step=False, on_epoch=True, sync_dist=True
-            )
+            self.log("train_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
+            self.log("train_acc", acc, on_step=False, on_epoch=True, sync_dist=True)
+            self.log("train_f1", f1, on_step=False, on_epoch=True, sync_dist=True)
         else:
             self.val_acc.update(preds, batch["labels"])
             self.val_f1.update(preds, batch["labels"])
-
-            self.log(
-                "val_loss", loss,
-                on_step=False, on_epoch=True, prog_bar=True, sync_dist=True
-            )
+            self.val_preds.extend(preds.cpu().tolist())
+            self.val_labels.extend(batch["labels"].cpu().tolist())
+            self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return loss
 
@@ -73,7 +62,7 @@ class AnswerGrader(pl.LightningModule):
         return self._shared_step(batch, stage="train")
 
     def validation_step(self, batch, _):
-        self._shared_step(batch, stage="val")
+        return self._shared_step(batch, stage="val")
 
     def on_validation_epoch_end(self):
         val_acc = self.val_acc.compute()
@@ -84,6 +73,26 @@ class AnswerGrader(pl.LightningModule):
 
         self.val_acc.reset()
         self.val_f1.reset()
+
+        if hasattr(self.logger, "experiment") and hasattr(self.logger, "run_id"):
+            try:
+                client = self.logger.experiment
+                run_id = self.logger.run_id
+
+                import tempfile
+                with tempfile.NamedTemporaryFile("w+", suffix=".jsonl", delete=False) as f:
+                    for true, pred in zip(self.val_labels, self.val_preds):
+                        f.write(json.dumps({"true": true, "pred": pred}) + "\n")
+                    f.flush()
+                    client.log_artifact(run_id=run_id, local_path=f.name, artifact_path="predictions")
+
+            except Exception as e:
+                print(f"Artifact logging error: {e}")
+        else:
+            print("MLflow logger inactive.")
+
+        self.val_preds = []
+        self.val_labels = []
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)

@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-
+from sklearn.metrics import confusion_matrix
 from hydra import initialize, compose
 from omegaconf import DictConfig
 
@@ -16,8 +16,11 @@ cfg = load_config()
 
 sns.set(style="whitegrid")
 
+PREDICTIONS_DIR = Path(__file__).parent / "predictions"
 PLOT_DIR = Path(__file__).parent / "eda_outputs"
 PLOT_DIR.mkdir(exist_ok=True)
+
+jsonl_files = sorted(PREDICTIONS_DIR.glob("*.jsonl"))
 
 classifier_path = Path(cfg.base.classifier_file)
 classifier_rows = [json.loads(line) for line in classifier_path.open(encoding="utf-8")]
@@ -64,7 +67,24 @@ plt.tight_layout()
 plt.savefig(PLOT_DIR / "avg_answer_length_generation.png", bbox_inches="tight")
 plt.show()
 
+true_labels = []
+pred_labels = []
 
-num_duplicates = df_qgen["question"].duplicated().sum()
+for fpath in jsonl_files:
+    with fpath.open("r", encoding="utf-8") as f:
+        for line in f:
+            item = json.loads(line)
+            true_labels.append(item["true"])
+            pred_labels.append(item["pred"])
 
-num_duplicates, df_classifier.shape, df_qgen.shape
+labels = sorted(set(true_labels + pred_labels))
+cm = confusion_matrix(true_labels, pred_labels, labels=labels)
+
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+plt.title("Матрица ошибок")
+plt.xlabel("Предсказанная оценка")
+plt.ylabel("Референсная оценка")
+plt.tight_layout()
+plt.savefig(PLOT_DIR / "confusion_matrix.png", bbox_inches="tight")
+plt.show()
