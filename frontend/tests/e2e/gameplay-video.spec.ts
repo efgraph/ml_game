@@ -114,5 +114,38 @@ test.describe('Gameplay Video Recording', () => {
 
     await expect(page.getByRole('heading', { name: /Game Over/i })).toBeVisible({ timeout: 15000 });
     await page.waitForTimeout(3000);
+
+    const reviewButton = page.getByRole('button', { name: 'Review' });
+    await expect(reviewButton).toBeVisible();
+    await reviewButton.click();
+    await page.waitForTimeout(1000);
+
+    await expect(page.getByRole('heading', { name: 'Review Your Answers' })).toBeVisible();
+
+    const firstReviewItem = page.locator('.review-answers-list li').first();
+    await expect(firstReviewItem).toBeVisible();
+    await firstReviewItem.click();
+    await page.waitForTimeout(1000);
+
+    const reviewList = page.locator('.review-answers-list');
+    await expect(reviewList).toBeVisible();
+    await reviewList.evaluate(node => node.scrollTop = node.scrollHeight);
+    await page.waitForTimeout(500);
+
+    const lastReviewItem = page.locator('.review-answers-list li').last();
+    await expect(lastReviewItem).toBeVisible();
+    await lastReviewItem.click();
+    await page.waitForTimeout(1000);
+
+    const sendButton = page.locator('button.action-button.primary:has-text("Send (")');
+    await expect(sendButton).toBeVisible();
+    await expect(sendButton).toBeEnabled();
+    await sendButton.click();
+    await page.waitForTimeout(500);
+
+    const successToast = page.locator('.success-toast');
+    await expect(successToast).toBeVisible({ timeout: 10000 });
+
+    await page.waitForTimeout(3000);
   });
 }); 

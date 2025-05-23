@@ -1,16 +1,20 @@
 .answer-input-container {
   margin-top: 20px;
   width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 input {
-  width: calc(100% - 20px);
+  width: 100%;
   padding: 12px;
   font-size: 16px;
   border: 2px solid #ddd;
   border-radius: 6px;
   margin-bottom: 10px;
   transition: border-color 0.3s;
+  box-sizing: border-box;
 }
 
 input:focus {

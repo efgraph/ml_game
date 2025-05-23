@@ -97,3 +97,4 @@ data/
 .DS_Store
 Thumbs.db
 mlruns.db
+user_reviews.jsonl

@@ -98,12 +98,6 @@ const AnswerInput: React.FC<AnswerInputProps> = observer(({ disabled = false }) 
           <div className="feedback-message">{player.lastEvaluation.feedback}</div>
         )}
         
-        {player.lastAnswer && (
-          <div className="user-answer">
-            <strong>Your answer:</strong> {player.lastAnswer}
-          </div>
-        )}
-        
         {store.shouldMoveToNextQuestion() ? (
           <button 
             className="next-question-btn"

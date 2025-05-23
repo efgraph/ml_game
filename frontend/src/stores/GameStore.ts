@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
-import { makeAutoObservable, runInAction, action as mobxAction } from 'mobx';
+import { makeAutoObservable, runInAction, action as mobxAction, observable } from 'mobx';
 import apiClient from '../api/apiClient';
 import { EvaluationResult, AnswerEvaluation, EvaluationOptions } from '../utils/answerEvaluator';
-import { SubmitAnswerRequest } from '../api/types';
+import { SubmitAnswerRequest, SubmitAnswerResponse } from '../api/types';
 
 interface Question {
   id: number;
@@ -33,7 +33,14 @@ export interface GameSettings {
   numberOfPlayers: number;
 }
 
-class GameStore {
+export interface GameHistoryItem {
+  question: Question;
+  userAnswer: string;
+  evaluation: EvaluationResult;
+  isMarkedForReview: boolean;
+}
+
+export class GameStore {
   gameState: GameState = GameState.INITIAL;
   
   settings: GameSettings = {
@@ -52,6 +59,13 @@ class GameStore {
   
   questions: Question[] = [];
   
+  gameHistory: GameHistoryItem[] = [];
+  isReviewModeActive: boolean = false;
+  listRefreshKey: number = 0;
+  reviewListScrollTop: number = 0;
+  showSuccessToast: boolean = false;
+  toastMessage: string = "";
+  
   isLoadingQuestion: boolean = false;
   
   evaluationOptions: EvaluationOptions = {
@@ -68,7 +82,9 @@ class GameStore {
   readonly maxScorePerQuestion = 3;
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {
+        gameHistory: observable.shallow,
+    });
   }
   
   async initializeGame(): Promise<void> {
@@ -80,6 +96,11 @@ class GameStore {
     
     this.currentQuestionIndex = 0;
     this.players.clear();
+    
+    runInAction(() => {
+        this.gameHistory = [];
+        this.isReviewModeActive = false;
+    });
     
     this.players.set('player1', {
       id: 'player1',
@@ -115,15 +136,12 @@ class GameStore {
     this.questions = [];
     
     try {
-      console.log('Starting to load questions from API...');
-      
       const numberOfQuestions = 5;
       const loadedQuestions: Question[] = [];
       
       for (let i = 0; i < numberOfQuestions; i++) {
         const topic = apiClient.getRandomTopic();
-        console.log(`Loading question ${i+1}/${numberOfQuestions}, topic: ${topic}`);
-        
+
         try {
           const result = await apiClient.generateQuestion(topic);
           
@@ -133,9 +151,7 @@ class GameStore {
               id: i + 1
             };
             loadedQuestions.push(question);
-            console.log(`Question ${i+1} loaded:`, question.question);
           } else {
-            console.warn(`Failed to load question ${i+1}, using fallback`);
             loadedQuestions.push({
               ...result.question,
               id: i + 1
@@ -155,9 +171,7 @@ class GameStore {
       runInAction(() => {
         if (loadedQuestions.length > 0) {
           this.questions = loadedQuestions;
-          console.log(`Successfully loaded ${loadedQuestions.length} questions`);
         } else {
-          console.warn('No questions loaded from API, using default questions');
           this.questions = this.getDefaultQuestions();
         }
         this.isLoadingQuestion = false;
@@ -166,7 +180,6 @@ class GameStore {
       console.error('Error in loadQuestions:', error);
       
       runInAction(() => {
-        console.warn('Error loading questions, using default questions');
         this.questions = this.getDefaultQuestions();
         this.isLoadingQuestion = false;
       });
@@ -328,8 +341,7 @@ class GameStore {
     try {
       const currentQuestionId = this.currentQuestionIndex + 1;
       const currentTopic = this.currentQuestion?.topic || apiClient.getRandomTopic();
-      console.log(`Fetching opponent data for question ${currentQuestionId}, topic: ${currentTopic}`);
-      
+
       const response = await apiClient.getOpponentData({
         questionId: currentQuestionId,
         topic: currentTopic
@@ -338,9 +350,7 @@ class GameStore {
       if (response.success && this.gameState === GameState.PLAYING) {
         runInAction(() => {
           const opponent = this.opponentPlayer;
-          const prevScore = opponent.score;
-          const prevAnswered = opponent.questionsAnswered;
-          
+
           opponent.score = response.opponent.score;
           opponent.questionsAnswered = response.opponent.questionsAnswered;
           
@@ -356,12 +366,7 @@ class GameStore {
             };
           }
           
-          if (prevScore !== opponent.score || prevAnswered !== opponent.questionsAnswered) {
-            console.log(`Opponent updated: Score ${prevScore} → ${opponent.score}, Answered ${prevAnswered} → ${opponent.questionsAnswered}`);
-          }
-          
           if (this.shouldMoveToNextQuestion()) {
-            console.log("Both players have answered. Moving to next question.");
             this.moveToNextQuestion();
           }
         });
@@ -430,30 +435,35 @@ class GameStore {
     this.stopTimer();
     
     try {
-      console.log(`Submitting answer for question: "${this.currentQuestion.question}"`);
-      
       const requestPayload: SubmitAnswerRequest = {
         playerId: this.currentPlayer.id,
-        questionId: this.currentQuestionIndex + 1,
+        questionId: this.currentQuestion.id,
         answer: userAnswer
       };
       
-      const response = await apiClient.submitAnswer(requestPayload);
+      const response: SubmitAnswerResponse = await apiClient.submitAnswer(requestPayload);
       
       if (response.success) {
+        const evaluationResult = response.evaluation;
         runInAction(() => {
           const player = this.currentPlayer;
           
           player.lastAnswer = userAnswer;
-          player.lastEvaluation = response.evaluation;
-          
-          player.score += response.evaluation.score;
+          player.lastEvaluation = evaluationResult;
+          player.score += evaluationResult.score;
           player.questionsAnswered = this.currentQuestionIndex + 1;
+          
+          this.gameHistory.push({
+            question: this.questions[this.currentQuestionIndex],
+            userAnswer: userAnswer,
+            evaluation: evaluationResult,
+            isMarkedForReview: false,
+          });
           
           this.isLoading = false;
         });
         
-        return response.evaluation;
+        return evaluationResult;
       } else {
         throw new Error('Failed to submit answer');
       }
@@ -467,7 +477,7 @@ class GameStore {
       return {
         evaluation: AnswerEvaluation.INCORRECT,
         score: 0,
-        feedback: 'Error submitting answer. Please try again.'
+        feedback: 'Please try again.'
       };
     }
   }
@@ -484,6 +494,11 @@ class GameStore {
     this.timeRemaining = this.settings.questionTimeLimit;
     this.isLoading = false;
     this.isLoadingQuestion = false;
+    
+    runInAction(() => {
+        this.gameHistory = [];
+        this.isReviewModeActive = false;
+    });
     
     Array.from(this.players.values()).forEach(player => {
       player.score = 0;
@@ -538,6 +553,86 @@ class GameStore {
     if (!player || this.maxGameScore === 0) return 0;
     return (player.score / this.maxGameScore) * 100;
   }
+
+  toggleReviewMode = () => {
+    runInAction(() => {
+        this.isReviewModeActive = !this.isReviewModeActive;
+    });
+  };
+
+  toggleQuestionForReview = (questionId: number) => {
+    const itemIndex = this.gameHistory.findIndex(item => item.question.id === questionId);
+    if (itemIndex > -1) {
+      const currentItem = this.gameHistory[itemIndex];
+      const updatedItem = {
+        ...currentItem,
+        isMarkedForReview: !currentItem.isMarkedForReview
+      };
+      
+      const updatedHistory = [
+        ...this.gameHistory.slice(0, itemIndex),
+        updatedItem,
+        ...this.gameHistory.slice(itemIndex + 1)
+      ];
+      
+      runInAction(() => {
+          this.gameHistory = updatedHistory;
+          this.listRefreshKey++;
+      });
+
+    }
+  };
+
+  get selectedReviewCount(): number {
+    return this.gameHistory.filter(item => item.isMarkedForReview).length;
+  }
+
+  setReviewListScrollTop = (scrollTop: number) => {
+    this.reviewListScrollTop = scrollTop;
+  };
+
+  submitReviewedQuestions = async () => {
+    const reviewData = this.gameHistory.filter(item => item.isMarkedForReview);
+
+    if (reviewData.length === 0) {
+      alert("Please select a question.");
+      return;
+    }
+
+    runInAction(() => {
+        this.isLoading = true;
+    });
+
+    try {
+      const response = await apiClient.submitQuestionsForReview(reviewData);
+
+      if (response.success) {
+        runInAction(() => {
+          this.gameHistory.forEach(item => item.isMarkedForReview = false);
+          this.isReviewModeActive = false;
+          this.isLoading = false;
+          this.toastMessage = response.message || `Successfully submitted ${reviewData.length} questions for review.`;
+          this.showSuccessToast = true;
+        });
+        setTimeout(() => {
+          runInAction(() => {
+            this.showSuccessToast = false;
+          });
+        }, 3000);
+      } else {
+        runInAction(() => {
+            this.isLoading = false;
+        });
+        alert(`Failed to submit review: ${response.message || 'Unknown'}`);
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      runInAction(() => {
+        this.isLoading = false;
+      });
+      alert("Please try again.");
+    }
+  };
 }
 
 const gameStore = new GameStore();

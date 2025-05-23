@@ -6,7 +6,7 @@
   border-radius: 6px;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  height: 100%;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
 }
@@ -25,17 +25,24 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  gap: 8px;
 }
 
 .player-name {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .player-score {
   font-size: 0.85rem;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .score-value {
@@ -86,7 +93,8 @@
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #eee;
-  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .last-answer-label {
@@ -102,6 +110,10 @@
   background-color: #f9f9f9;
   border-radius: 3px;
   word-break: break-word;
+  line-height: 1.4;
+  height: calc(1.4em * 3 + 12px);
+  min-height: calc(1.4em * 1 + 12px);
+  overflow: hidden;
 }
 
 .answer-correct {

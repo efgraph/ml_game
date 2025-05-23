@@ -80,26 +80,6 @@ uvicorn api.api:app --host 0.0.0.0 --port 8000 --reload
     *(настраивается в `conf/classifier.yaml`)*
 
 
-**3. Сбор данных:**
-
-*   **Сгенерировать синтетические пары вопрос/ответ:**
-    ```bash
-    python commands.py parse --questions
-    ```
-    *(настраивается в `conf/base.yaml`)*
-
-*   **Сгенерировать контекст для вопросов:**
-    ```bash
-    python commands.py parse --context
-    ```
-    *(настраивается в `conf/base.yaml`)*
-
-*   **Сгенерировать оцененные пары, добавив референсы ответов:**
-    ```bash
-    python commands.py parse --classifier
-    ```
-    *(настраивается в `conf/base.yaml`)*
-
 ## Разработка
 
 -   **Запуск тестов:** `pytest`

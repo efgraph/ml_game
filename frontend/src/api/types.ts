@@ -1,4 +1,5 @@
 import { EvaluationResult } from '../utils/answerEvaluator';
+import { GameHistoryItem } from '../stores/GameStore';
 
 
 export interface SubmitAnswerRequest {
@@ -66,4 +67,5 @@ export interface ApiClient {
   getOpponentData: (params: GetOpponentDataParams) => Promise<GetOpponentDataResponse>;
   submitAnswer: (params: SubmitAnswerRequest) => Promise<SubmitAnswerResponse>;
   generateQuestion: (topic?: string) => Promise<GenerateQuestionResponse>;
+  submitQuestionsForReview: (reviewData: GameHistoryItem[]) => Promise<{ success: boolean; message?: string }>;
 } 

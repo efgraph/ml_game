@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Query
+import json
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List, Dict, Any
 
 from question_generator.infer import infer_qgen
 from answer_classifier.infer import infer_classifier
@@ -42,6 +44,15 @@ class ClassifyResponse(BaseModel):
     question: str
     predicted_score: int
 
+class ReviewedQuestionItem(BaseModel):
+    question: Dict[str, Any]
+    userAnswer: str
+    evaluation: Dict[str, Any]
+
+class ReviewSubmissionRequest(BaseModel):
+    reviewed_items: List[ReviewedQuestionItem]
+
+USER_REVIEWS_FILE = "./user_reviews.jsonl"
 
 @app.get("/v1/generate_question", response_model=QuestionResponse)
 async def generate_question(topic: str = Query(..., min_length=1)):
@@ -60,3 +71,16 @@ async def classify_answer(req: ClassifyRequest):
         return ClassifyResponse.model_validate(result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Invalid response: {e}")
+
+@app.post("/v1/review_questions", status_code=201)
+async def submit_review_questions(submission: ReviewSubmissionRequest = Body(...)):
+    if not submission.reviewed_items:
+        raise HTTPException(status_code=400, detail="No items submitted")
+
+    try:
+        with open(USER_REVIEWS_FILE, "a", encoding="utf-8") as f:
+            for item in submission.reviewed_items:
+                f.write(json.dumps(item.dict()) + "\n")
+        return {"message": f"{len(submission.reviewed_items)} items submitted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving review: {e}")

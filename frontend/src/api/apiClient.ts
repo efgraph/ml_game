@@ -1,5 +1,6 @@
 import { AnswerEvaluation } from '../utils/answerEvaluator';
 import { ApiClient, GenerateQuestionResponse, GetOpponentDataResponse, SubmitAnswerRequest, GetOpponentDataParams, SubmitAnswerResponse } from './types';
+import { GameHistoryItem } from '../stores/GameStore';
 
 const API_BASE_URL = 'http://localhost:8000/v1';
 
@@ -74,7 +75,7 @@ export const apiClient: ApiClient = {
     await loadQaData();
 
     const { questionId, topic } = params;
-    let opponentAnswer = "I'm not sure about that topic."; // Default fallback
+    let opponentAnswer = "I'm not sure about that topic.";
     let opponentEvaluationResult: "CORRECT" | "INCORRECT" = "INCORRECT";
 
     if (cachedQaEntries && cachedQaEntries.length > 0) {
@@ -242,6 +243,38 @@ export const apiClient: ApiClient = {
           context: "Failed to load context."
         }
       };
+    }
+  },
+
+  submitQuestionsForReview: async (reviewData: GameHistoryItem[]): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/review_questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ reviewed_items: reviewData }),
+        mode: 'cors',
+        credentials: 'omit'
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error submitting review (${response.status}): ${errorText}`);
+        try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.detail || `API error: ${response.status}`);
+        } catch {
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+      }
+
+      const responseData = await response.json();
+      return { success: true, message: responseData.message || 'Review submitted successfully.' };
+
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error occurred' };
     }
   }
 };
